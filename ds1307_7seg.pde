@@ -65,7 +65,7 @@ void setup()
    /*Initialize pins */
    for (i=2; i < 13; i++) pinMode(i, OUTPUT);   /* sets the pins 2-13 as outputs */
    for (i=9; i < 13; i++) digitalWrite(i, HIGH); /* Turn all 4 digits off */
-   pinMode(14, INPUT);
+   pinMode(14, INPUT);  /* Use A0 as a digital input for button to display seconds */
    
   /* Enable Timer1 Overflow Interrupt Enable and reset timer  */
   TIMSK1 = 1<<TOIE1;
@@ -84,17 +84,23 @@ void loop()
   int mins = Wire.receive();
   int hours = Wire.receive();
 
-  if (digitalRead(14)==HIGH) {
-     if ((hours & 0x1f) < 10 ) disp[3]=0x0a;  /* Assuming we're in 12 hour mode */
+  if (digitalRead(14)==HIGH) {    /* Seconds button not depressed */
+  
+  
+     /* Mask off 12/24 mode bit (assumes 12 hr mode) and check to see hour
+        tens = 1  - if not blank out leading digit otherwise set leading 
+        digit to 1*/
+     if ((hours & 0x1f) < 10 ) disp[3]=0x0a; 
         else disp[3]=1;
-     disp[2] = hours & 0x0f;
-     disp[1] = (mins >>4) & 0x0f;
-     disp[0] = mins &0x0f; 
-  } else {
-        disp[3] = 0x0a;
+        
+     disp[2] = hours & 0x0f;      /* Mask off tens place */
+     disp[1] = (mins >>4) & 0x0f; /* Move tens to ones and mask off */
+     disp[0] = mins & 0x0f;       /* Mask off tens */
+  } else {                        /* Seconds button depressed */
+        disp[3] = 0x0a;           /* Blank leading zeros */
         disp[2] = 0x0a;
-        disp[1] = (sec >>4) & 0x0f;
-        disp[0] = sec &0x0f;
+        disp[1] = (sec >>4) & 0x0f; /* Move tens to ones and mask off */
+        disp[0] = sec & 0x0f;       /* Mask off tens */
   }
   
   delay(200);
